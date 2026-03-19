@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+
+# Test coverage
+coverage
+.nyc_output
+
+# OS files
+.DS_Store
+
+# Editor / IDE
+.idea
+*.iml
+.vscode
+
+# Logs
+*.log
+
+# Environment
+*.local
+.env
+.env.*
+
+# Pack artifacts
+*.tgz
+
+# TypeScript
+tsconfig.tsbuildinfo
