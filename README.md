@@ -2,7 +2,7 @@
 
 Bring your GROQ queries into your test suite. Pin down the business logic, guard the execution plan, and catch regressions when queries change.
 
-A complete GROQ testing strategy layers several tools, each adding a different strength:
+Linting, testing, and monitoring each cover different things:
 
 | Layer                    | What it verifies                       | When it runs   | Deterministic |
 | ------------------------ | -------------------------------------- | -------------- | :-----------: |
@@ -12,7 +12,7 @@ A complete GROQ testing strategy layers several tools, each adding a different s
 | Timing assertions        | Latency within budget                  | CI / staging   |      No       |
 | Runtime monitoring       | Real-world performance                 | Post-deploy    |      N/A      |
 
-`vitest-groq` fills the two **bold** rows. Business logic tests lock the contract — output shape, filter rules, edge cases. Execution plan tests lock the performance strategy. When a query changes, the first confirms the contract still holds; the second confirms the plan is still efficient. [Why test GROQ →](docs/why-test-groq.md)
+`vitest-groq` fills the two **bold** rows. Lock the contract (output shape, filter rules, edge cases) and lock the performance strategy (indexed fetches, pushed-down sorts, batched subqueries). When a query changes, both layers run: did the contract hold? Is the plan still efficient? [Why test GROQ →](docs/why-test-groq.md)
 
 ```bash
 npm install -D vitest-groq groq-js
@@ -20,7 +20,7 @@ npm install -D vitest-groq groq-js
 
 ## Lock the contract
 
-Start by writing unit tests for the query's business logic. Build a small dataset that covers the meaningful paths, then assert on the output. No setup file, no network, no credentials — `groq()` runs queries against in-memory data via [groq-js](https://github.com/sanity-io/groq-js).
+Start by writing unit tests for the query's business logic. Any query with a filter condition, reference traversal, computed field, or sort has logic worth testing — and `groq()` tests run in milliseconds with no network, so they're cheap enough to be the default for most queries. Build a small dataset that covers the meaningful paths, then assert on the output. No setup file, no credentials. `groq()` runs queries against in-memory data via [groq-js](https://github.com/sanity-io/groq-js).
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -58,13 +58,13 @@ describe("featuredArticlesQuery", () => {
   }`;
 
   it("returns featured articles with active authors", async () => {
-    const result = await groq(QUERY, dataset);
+    const result = await groq(dataset, QUERY);
     expect(result).toHaveLength(1);
     expect(result[0].authorName).toBe("Alice");
   });
 
   it("excludes articles whose author is inactive", async () => {
-    const result = await groq(QUERY, dataset);
+    const result = await groq(dataset, QUERY);
     expect(result).not.toContainEqual(
       expect.objectContaining({ _id: "article-3" }),
     );
@@ -72,18 +72,18 @@ describe("featuredArticlesQuery", () => {
 });
 ```
 
-Three to five documents is usually enough. These tests run in milliseconds — they're your safety net during refactors. See [Query contract testing](docs/groq-testing.md) for partial application, time-dependent queries, delta/webhook filters, and fidelity notes.
+Three to five documents is usually enough. These tests run in milliseconds and are your safety net during refactors. See [Query contract testing](docs/groq-testing.md) for partial application, time-dependent queries, delta/webhook filters, and fidelity notes.
 
 ## Guard the execution plan
 
-Once the contract is locked, add execution plan snapshots to verify performance. `explain()` asks Content Lake how it plans to execute a query and returns the strategy — which indexes it uses, whether sorts and limits are pushed down, how references are resolved.
+Once the contract is locked, add execution plan snapshots to verify performance. These are most valuable for queries that power user-facing pages or API endpoints, where a plan regression becomes real latency. `explain()` asks Content Lake how it plans to execute a query and returns the strategy: which indexes it uses, whether sorts and limits are pushed down, how references are resolved.
 
-> **Heads up — explain tests hit the live API.**
+> **Heads up: explain tests hit the live API.**
 >
 > Each `explain()` call is a real Content Lake API request and counts toward your project's [API quota](https://www.sanity.io/pricing). A few things to know:
 >
 > - **Keep explain tests in a dedicated config** (e.g. `vitest.perf.config.ts`) so they don't run on every `vitest run`.
-> - **Set `useCdn: false`** on the client. Explain responses are execution plan metadata, not cacheable query results — routing through the CDN adds latency with no benefit.
+> - **Set `useCdn: false`** on the client. Explain responses are execution plan metadata, not cacheable query results, so routing through the CDN adds latency with no benefit.
 > - **Rate limiting is handled automatically.** `@sanity/client` retries 429/502/503 responses with exponential backoff (up to 5 retries by default). If you have a large suite of explain tests, you can increase `maxRetries` on the client.
 > - **Set `requestTagPrefix`** (e.g. `"performance-testing"`) so explain test traffic is identifiable in your project's request logs.
 
@@ -114,7 +114,7 @@ export default defineConfig(({ mode }) => {
 });
 ```
 
-Then write an explain test for a data-fetching query:
+Now verify the execution plan for the same query:
 
 ```ts
 // queries.perf.test.ts
@@ -131,20 +131,56 @@ const client = createClient({
   requestTagPrefix: "performance-testing",
 });
 
-describe("query execution plans", () => {
-  it("fetches recent posts efficiently", async () => {
-    const { characteristics } = await explain(
-      client,
-      `*[_type == "post"] | order(_createdAt desc)[0..9]`,
-    );
+describe("featuredArticlesQuery execution plan", () => {
+  const QUERY = `*[_type == "article" && featured == true && author->active != false] {
+    _id, title, "authorName": author->name
+  }`;
+
+  it("uses indexed fetches and batched reference resolution", async () => {
+    const { characteristics } = await explain(client, QUERY);
     expect(characteristics).toMatchSnapshot();
     expect(characteristics).toHaveNoDuplicateFetches();
-    expect(characteristics).toHaveNoFilterStep();
   });
 });
 ```
 
-On the first run Vitest records the snapshot. On subsequent runs, any change to the plan shows up as a diff — you review it and either update the snapshot (the plan improved) or fix the query (the plan regressed).
+The snapshot reveals a `FilterStep`: the `author->active` dereference in the filter can't be pushed to the index, so Content Lake scans every article and resolves each author reference in memory.
+
+## Improve the query
+
+Refactor the filter to use set membership instead of a dereference. This lets the engine build the set of active author IDs once, then push `_ref in <set>` to the index:
+
+```groq
+*[_type == "article"
+  && featured == true
+  && author._ref in *[_type == "author" && active != false]._id
+] {
+  _id, title, "authorName": author->name
+}
+```
+
+The `groq()` tests from the first section still pass: same articles, same shape, same edge cases. The dereference in the projection (`author->name`) is fine because projections don't need index access.
+
+Update the snapshot. The `FilterStep` is gone. Add `toHaveNoFilterStep()` to lock in the improvement:
+
+```ts
+it("uses indexed fetches and batched reference resolution", async () => {
+  const { characteristics } = await explain(client, QUERY);
+  expect(characteristics).toMatchSnapshot();
+  expect(characteristics).toHaveNoDuplicateFetches();
+  expect(characteristics).toHaveNoFilterStep();
+});
+```
+
+That's the full cycle: lock the contract, see the plan, improve the query, confirm the contract held, confirm the plan improved.
+
+### Let the agent do the work
+
+If you use [Claude Code](https://docs.anthropic.com/en/docs/claude-code), the `vitest-groq` skill can walk through this cycle for you. Point it at a query and it will write the unit tests, run the explain, read the snapshot, suggest the refactor, and verify both layers pass:
+
+```
+/vitest-groq *[_type == "article" && featured == true && author->active != false]
+```
 
 ## Assertion reference
 

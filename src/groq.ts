@@ -2,16 +2,40 @@ import type { Any, ClientReturn } from "@sanity/client";
 import type { EvaluateOptions, ParseOptions } from "groq-js";
 import { evaluate, parse } from "groq-js";
 
+/**
+ * Options forwarded to groq-js. Includes everything from `EvaluateOptions`
+ * (except `dataset`, which is the first argument) plus `mode` from the parser.
+ *
+ * Common options: `params`, `timestamp`, `identity`, `before`/`after` (delta queries),
+ * `sanity` (namespace functions like `sanity::dataset()`).
+ */
 export type GroqOptions = Omit<EvaluateOptions, "dataset"> & Pick<ParseOptions, "mode">;
 
-// Overload 1: direct call — query first
+/**
+ * Run a GROQ query against an in-memory dataset.
+ *
+ * @example
+ * ```ts
+ * const result = await groq(dataset, `*[_type == "post"]{ title }`);
+ * const result = await groq(dataset, query, { params: { id: "doc.1" } });
+ * ```
+ */
 export function groq<R = Any, const G extends string = string>(
-  query: G,
   dataset: unknown[],
+  query: G,
   options?: GroqOptions,
 ): Promise<ClientReturn<G, R>>;
 
-// Overload 2: partial application — dataset first, returns query function
+/**
+ * Bind a dataset (and optional defaults) to create a reusable query function.
+ *
+ * @example
+ * ```ts
+ * const run = groq(dataset, { timestamp: new Date("2025-03-17") });
+ * const result = await run(myQuery);
+ * const result = await run(otherQuery, { params: { limit: 5 } });
+ * ```
+ */
 export function groq(
   dataset: unknown[],
   defaults?: GroqOptions,
@@ -20,17 +44,15 @@ export function groq(
   options?: GroqOptions,
 ) => Promise<ClientReturn<G, R>>;
 
-// Implementation
 export function groq(
-  queryOrDataset: string | unknown[],
-  datasetOrDefaults?: unknown[] | GroqOptions,
+  dataset: unknown[],
+  queryOrDefaults?: string | GroqOptions,
   options?: GroqOptions,
 ) {
-  if (typeof queryOrDataset === "string") {
-    return exec(queryOrDataset, datasetOrDefaults as unknown[], options);
+  if (typeof queryOrDefaults === "string") {
+    return exec(queryOrDefaults, dataset, options);
   }
-  const dataset = queryOrDataset;
-  const defaults = datasetOrDefaults as GroqOptions | undefined;
+  const defaults = queryOrDefaults;
   return <R = Any, const G extends string = string>(
     query: G,
     opts?: GroqOptions,

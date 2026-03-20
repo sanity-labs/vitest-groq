@@ -1,7 +1,8 @@
 /**
- * Structural subset of `SanityClient` — avoids concrete class coupling
- * so consumers don't hit duplicate-package issues with `npm link` or
- * mismatched `@sanity/client` versions.
+ * Any object that implements `request()` and `getDataUrl()` from `@sanity/client`.
+ *
+ * You can pass a `SanityClient` instance directly — this interface exists so
+ * vitest-groq doesn't need `@sanity/client` as a direct dependency.
  */
 export interface SanityClientLike {
   request<T>(options: { uri: string; query: Record<string, string> }): Promise<T>;
@@ -9,81 +10,112 @@ export interface SanityClientLike {
 }
 
 /**
- * Stable, snapshot-friendly characteristics extracted from a GROQ execution plan.
+ * Snapshot-friendly summary of a GROQ execution plan.
+ *
+ * Use with `toMatchSnapshot()` to detect plan regressions, and with
+ * custom matchers (`toHaveNoFilterStep()`, etc.) to guard specific optimizations.
+ *
+ * @example
+ * ```ts
+ * const { characteristics } = await explain(client, query);
+ * expect(characteristics).toMatchSnapshot();
+ * expect(characteristics).toHaveNoFilterStep();
+ * ```
  *
  * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq | High performance GROQ}
  */
 export interface PlanCharacteristics {
   /**
-   * No `FilterStep` in the plan — all filters are inside Fetch nodes.
+   * `true` when all filters are handled at the index (inside Fetch nodes).
+   * `false` means a `FilterStep` is scanning every fetched row in memory — O(n).
    *
-   * When `false`, the engine is scanning rows in memory after fetching.
    * Guard with `expect(c).toHaveNoFilterStep()`.
    *
    * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq | High performance GROQ — Filter expressions}
    */
   noFilterStep: boolean;
   /**
-   * At least one `Fetch { Sort: ... }` — sort handled at the index.
+   * `true` when at least one Fetch includes `Sort:` — rows arrive pre-sorted from the index.
+   * `false` means a `SortStep` materializes all rows in memory to sort them.
    *
-   * When `false`, a `SortStep` materializes all rows in memory to sort them.
    * Guard with `expect(c).toHaveSortInFetch()`.
    *
    * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq | High performance GROQ — Sorting}
    */
   sortInFetch: boolean;
   /**
-   * At least one `Fetch { Limit: ... }` — slice handled at the index.
+   * `true` when at least one Fetch includes `Limit:` — only the needed rows leave the index.
+   * `false` means all matching rows are fetched then discarded via `SliceStep`.
    *
-   * When `false`, all matching rows are fetched then discarded via `SliceStep`.
    * Guard with `expect(c).toHaveLimitInFetch()`.
    *
    * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq | High performance GROQ — Slicing}
    */
   limitInFetch: boolean;
   /**
-   * Ordered unique plan elements (pipeline steps + source nodes).
+   * Ordered, deduplicated list of plan elements (pipeline steps and source nodes).
    *
-   * Use native matchers: `expect(c.steps).toContain('HashBatchStep')`,
-   * `expect(c.steps).not.toContain('SortStep')`.
+   * @example
+   * ```ts
+   * expect(c.steps).toContain("HashBatchStep");
+   * expect(c.steps).not.toContain("SortStep");
+   * ```
    */
   steps: string[];
   /**
    * Number of Fetch nodes with non-trivial filters.
    *
-   * Use native matchers: `expect(c.fetchCount).toBeLessThanOrEqual(3)`.
+   * @example
+   * ```ts
+   * expect(c.fetchCount).toBeLessThanOrEqual(3);
+   * ```
    */
   fetchCount: number;
   /**
-   * Normalized Fetch filters appearing more than once.
-   * Each entry is a redundant subquery — a separate network round-trip.
+   * Fetch filters that appear more than once — each is a redundant round-trip.
+   * An empty array means no duplicates (the ideal state).
    *
-   * Use native matchers: `expect(c.duplicateFetches).toEqual([])`,
-   * or `expect(c.duplicateFetches.length).toBeLessThan(2)` for tolerance.
+   * Guard with `expect(c).toHaveNoDuplicateFetches()`, or use a threshold:
+   * `expect(c.duplicateFetches.length).toBeLessThan(2)`.
    *
    * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq | High performance GROQ — Avoid joins in filters}
    */
   duplicateFetches: string[];
   /**
-   * Number of `ResolveRefStep` instances (batched reference lookups).
+   * Number of `ResolveRefStep` nodes — each is a batched reference lookup.
    *
-   * Use native matchers: `expect(c.resolveRefCount).toBeLessThanOrEqual(3)`.
+   * @example
+   * ```ts
+   * expect(c.resolveRefCount).toBeLessThanOrEqual(2);
+   * ```
    *
    * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq | High performance GROQ — Reference resolution}
    */
   resolveRefCount: number;
 }
 
+/** The full response from {@link explain}, including raw output and parsed characteristics. */
 export interface ExplainResult {
+  /** The raw explain string returned by Content Lake. */
   raw: string;
+  /** Server-side query execution time in milliseconds. */
   ms: number;
+  /** Number of documents in the query result. */
   resultCount: number;
+  /** Parsed plan summary — use this for assertions and snapshots. */
   characteristics: PlanCharacteristics;
 }
 
 /**
- * Run a GROQ query with `explain=true` against Content Lake and return
- * structured execution-plan characteristics suitable for snapshot testing.
+ * Send a GROQ query to Content Lake with `explain=true` and get back
+ * the execution plan as structured, snapshot-friendly characteristics.
+ *
+ * @example
+ * ```ts
+ * const { characteristics } = await explain(client, query, { slug: "hello" });
+ * expect(characteristics).toMatchSnapshot();
+ * expect(characteristics).toHaveNoDuplicateFetches();
+ * ```
  */
 export async function explain(
   client: SanityClientLike,
@@ -119,9 +151,16 @@ export async function explain(
 }
 
 /**
- * Extract stable, snapshot-friendly characteristics from a raw explain plan.
+ * Parse a raw explain string into {@link PlanCharacteristics}.
  *
- * Shared by both the `explain()` test utility and CLI scripts.
+ * Use this when you already have the explain output (e.g. from a CLI script
+ * or logged response) and want to run assertions against it.
+ *
+ * @example
+ * ```ts
+ * const characteristics = parsePlan(rawExplainString);
+ * expect(characteristics).toMatchSnapshot();
+ * ```
  */
 export function parsePlan(raw: string): PlanCharacteristics {
   const hasFilterStep = raw.includes("FilterStep");

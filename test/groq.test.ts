@@ -11,29 +11,29 @@ const posts = [
 
 describe("groq — direct call", () => {
   it("filters by _type", async () => {
-    const result = await groq(`*[_type == "post"]`, posts);
+    const result = await groq(posts, `*[_type == "post"]`);
     expect(result).toHaveLength(3);
   });
 
   it("projects fields", async () => {
-    const result = await groq(`*[_type == "post"]{ title }`, posts);
+    const result = await groq(posts, `*[_type == "post"]{ title }`);
     expect(result).toEqual([{ title: "First" }, { title: "Second" }, { title: "Third" }]);
   });
 
   it("accepts params", async () => {
-    const result = await groq(`*[_id == $id][0]`, posts, {
+    const result = await groq(posts, `*[_id == $id][0]`, {
       params: { id: "post.2" },
     });
     expect(result).toMatchObject({ title: "Second" });
   });
 
   it("returns count", async () => {
-    const result = await groq(`count(*[_type == "post"])`, posts);
+    const result = await groq(posts, `count(*[_type == "post"])`);
     expect(result).toBe(3);
   });
 
   it("returns null for empty match", async () => {
-    const result = await groq(`*[_type == "nonexistent"][0]`, posts);
+    const result = await groq(posts, `*[_type == "nonexistent"][0]`);
     expect(result).toBeNull();
   });
 });
