@@ -1,6 +1,6 @@
 # GROQ Optimization Patterns
 
-When an explain test fails, these patterns show you what's wrong, how to rewrite the query, and which assertions to use. See the [High performance GROQ](https://www.sanity.io/docs/developer-guides/high-performance-groq) guide for the complete reference.
+These patterns show how to improve a query's execution plan, how to rewrite for better index usage, and which assertions to add. See the [High performance GROQ](https://www.sanity.io/docs/developer-guides/high-performance-groq) guide for the complete reference.
 
 ---
 
@@ -236,4 +236,4 @@ expect(characteristics.steps).not.toContain("FilterStep");
 | Reference budget              | + `expect(c.resolveRefCount).toBeLessThanOrEqual(n)` |
 | Correlated subqueries batched | + `expect(c.steps).toContain('HashBatchStep')`       |
 
-Add optimization guards only after verifying a query is optimized — they prevent silent regressions on subsequent refactors.
+Add optimization guards as a query achieves each optimization — they lock in the improvement across future refactors.

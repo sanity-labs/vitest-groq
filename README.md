@@ -1,46 +1,26 @@
 # vitest-groq
 
-Test how your GROQ queries run, not just what they return.
+Bring your GROQ queries into your test suite. Pin down the business logic, guard the execution plan, and catch regressions when queries change.
 
-When Sanity's Content Lake runs a GROQ query, it builds an **execution plan**: the strategy it uses to find your data. Some plans use an index (fast, even with millions of documents). Others scan every document in the dataset looking for matches (slow, and gets worse as your dataset grows).
+A complete GROQ testing strategy layers several tools, each adding a different strength:
 
-The tricky part: both plans return the same results. Your query looks correct, your app works fine, and nothing breaks until the dataset grows and pages start taking seconds to load.
-
-`vitest-groq` gives you two tools to catch problems before they ship:
-
-1. **`groq()`** — runs GROQ queries against in-memory datasets via [groq-js](https://github.com/sanity-io/groq-js). Tests filter logic, sort order, projection shapes, and edge cases. No network, no credentials, runs in CI alongside your unit tests.
-
-2. **`explain()`** — asks Content Lake how it *plans* to execute a query and snapshots the strategy. Catches full table scans, unnecessary sorts, redundant fetches, and reference resolution bloat. Same query always produces the same plan, regardless of dataset size or server load.
-
-**No single approach covers everything.** Lint rules catch known anti-patterns but can't detect regressions. Timing assertions are flaky. Runtime monitoring only fires after users are affected. A solid GROQ testing strategy layers several tools, each covering a different gap:
-
-| Layer                    | What it catches                        | When it runs   | Deterministic |
+| Layer                    | What it verifies                       | When it runs   | Deterministic |
 | ------------------------ | -------------------------------------- | -------------- | :-----------: |
-| Lint rules               | Known anti-patterns (static)           | Pre-commit     |      Yes      |
-| **Correctness tests**    | **Wrong data, broken filters, shapes** | **CI (fast)**  |    **Yes**    |
-| **Execution plan tests** | **Slow plans, optimizer regressions**  | **CI (API)**   |    **Yes**    |
-| Timing assertions        | Gross latency changes                  | CI / staging   |      No       |
+| Lint rules               | Syntax and known patterns (static)     | Pre-commit     |      Yes      |
+| **Business logic tests** | **Correct data, filters, shapes**      | **CI (fast)**  |    **Yes**    |
+| **Execution plan tests** | **Fast plans, optimizer stability**    | **CI (API)**   |    **Yes**    |
+| Timing assertions        | Latency within budget                  | CI / staging   |      No       |
 | Runtime monitoring       | Real-world performance                 | Post-deploy    |      N/A      |
 
-`vitest-groq` fills the two **bold** rows — the pre-deploy layers that are both deterministic and CI-friendly. [Full comparison →](docs/why-snapshots.md)
-
-## How the two tools work together
-
-**1. Write unit tests to pin down the contract.** For each query, build a small dataset and assert on output shape and edge cases. These run in milliseconds — your safety net during refactors.
-
-**2. Add execution plan snapshots.** For each data-fetching query, capture how Content Lake will execute it. The snapshot locks in the current strategy.
-
-**3. When something looks wrong, fix the query.** The unit tests confirm the output didn't change. The snapshot diff shows the structural improvement — you'll see steps like `SortStep` disappear and `sortInFetch` flip to `true`.
-
-## Quick start
+`vitest-groq` fills the two **bold** rows. Business logic tests lock the contract — output shape, filter rules, edge cases. Execution plan tests lock the performance strategy. When a query changes, the first confirms the contract still holds; the second confirms the plan is still efficient. [Why test GROQ →](docs/why-test-groq.md)
 
 ```bash
 npm install -D vitest-groq groq-js
 ```
 
-### Unit tests with `groq()`
+## Lock the contract
 
-No setup file needed. Import and test:
+Start by writing unit tests for the query's business logic. Build a small dataset that covers the meaningful paths, then assert on the output. No setup file, no network, no credentials — `groq()` runs queries against in-memory data via [groq-js](https://github.com/sanity-io/groq-js).
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -92,9 +72,11 @@ describe("featuredArticlesQuery", () => {
 });
 ```
 
-Datasets can stay small. Three to five documents is usually enough to cover a query's meaningful paths. See [Query correctness testing](docs/groq-testing.md) for the full guide including partial application, time-dependent queries, delta/webhook filters, and fidelity gaps.
+Three to five documents is usually enough. These tests run in milliseconds — they're your safety net during refactors. See [Query contract testing](docs/groq-testing.md) for partial application, time-dependent queries, delta/webhook filters, and fidelity notes.
 
-### Execution plan tests with `explain()`
+## Guard the execution plan
+
+Once the contract is locked, add execution plan snapshots to verify performance. `explain()` asks Content Lake how it plans to execute a query and returns the strategy — which indexes it uses, whether sorts and limits are pushed down, how references are resolved.
 
 > **Heads up — explain tests hit the live API.**
 >
@@ -132,7 +114,7 @@ export default defineConfig(({ mode }) => {
 });
 ```
 
-Write your first explain test:
+Then write an explain test for a data-fetching query:
 
 ```ts
 // queries.perf.test.ts
@@ -162,101 +144,31 @@ describe("query execution plans", () => {
 });
 ```
 
-On the first run Vitest records the snapshot. Future runs break if the plan regresses.
+On the first run Vitest records the snapshot. On subsequent runs, any change to the plan shows up as a diff — you review it and either update the snapshot (the plan improved) or fix the query (the plan regressed).
 
-## Custom matchers
+## Assertion reference
 
 Import `vitest-groq/plan-matchers` in your setup file to register these:
 
-| Matcher                      | What it guards               | Why it matters                                                   |
+| Matcher                      | What it verifies             | Why it matters                                                   |
 | ---------------------------- | ---------------------------- | ---------------------------------------------------------------- |
-| `toHaveNoDuplicateFetches()` | No duplicate Fetch filters   | Each duplicate is a redundant network round-trip                 |
-| `toHaveNoFilterStep()`       | No `FilterStep` in the plan  | FilterStep scans every document, O(n) over the full dataset      |
-| `toHaveSortInFetch()`        | `Sort:` inside a Fetch node  | Without it, SortStep materializes all rows to sort them          |
-| `toHaveLimitInFetch()`       | `Limit:` inside a Fetch node | Without it, all matching rows are fetched then sliced            |
+| `toHaveNoDuplicateFetches()` | Each subquery runs once      | Avoids redundant network round-trips                             |
+| `toHaveNoFilterStep()`       | All filters use an index     | Ensures O(log n) lookups instead of full scans                   |
+| `toHaveSortInFetch()`        | Sort pushed to index         | Results arrive pre-sorted from the storage layer                 |
+| `toHaveLimitInFetch()`       | Limit pushed to index        | Only the rows needed are fetched                                 |
 
 `toHaveNoDuplicateFetches()` belongs in every explain test. Add the others as a query achieves each optimization.
 
-## Native matchers
+For numeric and array properties, use Vitest built-ins directly:
 
-For numbers and arrays, Vitest's built-in matchers are already expressive:
+`expect(c.fetchCount).toBeLessThanOrEqual(3)` · `expect(c.steps).not.toContain("SortStep")`
 
-```ts
-expect(characteristics.fetchCount).toBeLessThanOrEqual(3);
-expect(characteristics.resolveRefCount).toBeLessThanOrEqual(2);
-expect(characteristics.duplicateFetches.length).toBeLessThan(2);
-expect(characteristics.steps).not.toContain("SortStep");
-expect(characteristics.steps).toContain("HashBatchStep");
-```
-
-## Choosing assertions
-
-| Scenario              | What to add                                          |
-| --------------------- | ---------------------------------------------------- |
-| Every explain test    | `toMatchSnapshot()` + `toHaveNoDuplicateFetches()`   |
-| All filters indexable | + `toHaveNoFilterStep()`                             |
-| Sort pushed to index  | + `toHaveSortInFetch()`                              |
-| Limit pushed to index | + `toHaveLimitInFetch()`                             |
-| Fetch budget          | + `expect(c.fetchCount).toBeLessThanOrEqual(n)`      |
-| Reference budget      | + `expect(c.resolveRefCount).toBeLessThanOrEqual(n)` |
-| Batched correlations  | + `expect(c.steps).toContain('HashBatchStep')`       |
-
-Add guards incrementally — once a query is optimized, the assertions prevent it from regressing.
+See [Optimization patterns](docs/optimization.md) for guidance on which assertions to add when.
 
 ## Further reading
 
-- [Query correctness testing](docs/groq-testing.md) — partial application, time-dependent queries, delta/webhook filters, identity, fidelity gaps
-- [Optimization patterns](docs/optimization.md) — common explain test failures and how to fix the underlying queries
+- [Query contract testing](docs/groq-testing.md) — partial application, time-dependent queries, delta/webhook filters, identity, fidelity notes
+- [Optimization patterns](docs/optimization.md) — improving execution plans with query rewrites and index-friendly patterns
 - [Plan elements glossary](docs/plan-elements.md) — every source node and pipeline step in the explain output
-- [Why snapshots](docs/why-snapshots.md) — detailed comparison with linting, timing assertions, and runtime monitoring
+- [Why test GROQ](docs/why-test-groq.md) — business logic and performance testing compared with linting, timing assertions, and runtime monitoring
 - [High performance GROQ](https://www.sanity.io/docs/developer-guides/high-performance-groq) — the complete Sanity reference
-
-## API reference
-
-### `explain(client, query, params?)`
-
-Sends a GROQ query to Content Lake with `explain=true` and returns structured plan characteristics.
-
-```ts
-import { explain } from "vitest-groq";
-
-const result = await explain(client, query, { id: "test" });
-// result.raw          — raw explain string
-// result.ms           — server-side timing
-// result.resultCount  — number of results
-// result.characteristics — PlanCharacteristics
-```
-
-### `groq(query, dataset, options?)`
-
-Runs a query against a local dataset via groq-js. Returns the result with full type inference when used with `defineQuery()`.
-
-```ts
-import { groq } from "vitest-groq/groq";
-
-// Direct call
-const result = await groq(query, dataset, { params: { locale: "en" } });
-
-// Partial application — bind dataset + options, reuse across tests
-const run = groq(dataset, { timestamp: new Date("2025-03-17") });
-const result = await run(query);
-```
-
-### `parsePlan(raw)`
-
-Extracts `PlanCharacteristics` from a raw explain string. Useful when you already have the explain output (e.g., from a CLI script).
-
-```ts
-import { parsePlan } from "vitest-groq";
-
-const characteristics = parsePlan(explainString);
-```
-
-### Entrypoints
-
-| Import path                 | What it exports                                                    | Peer deps        |
-| --------------------------- | ------------------------------------------------------------------ | ---------------- |
-| `vitest-groq`               | `explain()`, `parsePlan()`, `PlanCharacteristics`, `ExplainResult` | `@sanity/client` |
-| `vitest-groq/groq`          | `groq()`, `GroqOptions`                                            | `groq-js`        |
-| `vitest-groq/plan-matchers` | Calls `expect.extend()` + type augmentation (side-effect)          | `vitest`         |
-| `vitest-groq/matchers`      | `planMatchers` object for manual registration / Jest compat        | none             |

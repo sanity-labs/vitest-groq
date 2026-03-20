@@ -1,6 +1,6 @@
 ---
 name: vitest-groq
-description: Write and debug GROQ execution plan tests using vitest-groq. Use when creating explain tests, diagnosing slow queries, understanding plan characteristics, or testing GROQ query correctness in-memory.
+description: Write and debug GROQ execution plan tests using vitest-groq. Use when creating explain tests, diagnosing slow queries, understanding plan characteristics, or testing GROQ query business logic in-memory.
 argument-hint: <query-or-file>
 metadata:
   version: "1.0.0"
@@ -8,7 +8,7 @@ metadata:
 
 # vitest-groq
 
-Test how GROQ queries run, not just what they return.
+Bring your GROQ queries into your test suite. Pin down the business logic, guard the execution plan, and catch regressions when queries change.
 
 ## What you do
 
@@ -17,7 +17,7 @@ When the user asks you to write or debug GROQ performance tests, follow this wor
 1. **Read the query** — understand the GROQ query and what it's trying to do
 2. **Write an explain test** — use `explain()` to get the execution plan from Content Lake
 3. **Assert on the plan** — use custom matchers to guard against regressions
-4. **Fix the query if needed** — apply optimization patterns to eliminate slow plan elements
+4. **Optimize the query if needed** — apply optimization patterns for better index usage
 
 ## Setup
 
@@ -63,12 +63,12 @@ it("fetches recent posts efficiently", async () => {
 
 ### Custom matchers
 
-| Matcher                      | Guards against                                              |
+| Matcher                      | What it verifies                                            |
 | ---------------------------- | ----------------------------------------------------------- |
-| `toHaveNoDuplicateFetches()` | Redundant network round-trips (duplicate Fetch filters)     |
-| `toHaveNoFilterStep()`       | In-memory scanning — O(n) over the full dataset             |
-| `toHaveSortInFetch()`        | Sort not pushed to index — materializes all rows in memory  |
-| `toHaveLimitInFetch()`       | Limit not pushed to index — fetches all rows then slices    |
+| `toHaveNoDuplicateFetches()` | Each subquery runs once (no duplicate Fetch filters)        |
+| `toHaveNoFilterStep()`       | All filters pushed to index (no in-memory scanning)         |
+| `toHaveSortInFetch()`        | Sort pushed to index (no in-memory materialization)         |
+| `toHaveLimitInFetch()`       | Limit pushed to index (fetches only the rows needed)        |
 
 **Every explain test** should have `toMatchSnapshot()` + `toHaveNoDuplicateFetches()`. Add others when the query achieves the corresponding optimization.
 
@@ -80,7 +80,7 @@ expect(characteristics.resolveRefCount).toBeLessThanOrEqual(2);
 expect(characteristics.steps).not.toContain("SortStep");
 ```
 
-## Testing query correctness (in-memory)
+## Testing query business logic (in-memory)
 
 The `vitest-groq/groq` entrypoint wraps groq-js for testing GROQ query logic without network or credentials:
 
@@ -106,7 +106,7 @@ Options: `params`, `timestamp`, `identity`, `before`/`after` (delta), `sanity`, 
 
 ## Optimization patterns
 
-When a test fails, these are the most common fixes:
+Common patterns for improving execution plans:
 
 **FilterStep (in-memory scan):**
 - Move dereferences out of filters: `author->slug.current == $slug` → flip the lookup so `_ref in` stays indexable
@@ -124,7 +124,7 @@ When a test fails, these are the most common fixes:
 ## Reference documentation
 
 For complete guides, read these project docs:
-- `docs/optimization.md` — common failures and query fixes
+- `docs/optimization.md` — optimization patterns and query rewrites
 - `docs/plan-elements.md` — every source node and pipeline step
-- `docs/groq-testing.md` — in-memory query testing (time, delta, identity, fidelity gaps)
-- `docs/why-snapshots.md` — how explain snapshots compare to other approaches
+- `docs/groq-testing.md` — in-memory query testing (time, delta, identity, fidelity notes)
+- `docs/why-test-groq.md` — business logic and performance testing compared with other approaches

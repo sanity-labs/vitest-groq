@@ -251,9 +251,9 @@ This approach works well for:
 
 Datasets can stay small. Three to five documents is usually enough to cover a query's meaningful paths.
 
-## Fidelity gaps: groq-js vs Content Lake
+## Fidelity notes: groq-js vs Content Lake
 
-groq-js is a faithful JS implementation of the GROQ spec, but Content Lake is not groq-js. Be aware of where they diverge:
+groq-js is a faithful JS implementation of the GROQ spec. Content Lake extends this with additional runtime capabilities. Here's where they differ:
 
 | Area                          | groq-js behavior                                 | Content Lake behavior                                                                    |
 | ----------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
@@ -274,8 +274,8 @@ A handful of GROQ functions throw `not implemented` in groq-js:
 - `user::attributes()`
 - `media::aspect()`
 
-If your queries use any of these, groq-js throws immediately rather than silently returning wrong results. Those queries need to be tested against a real Sanity dataset instead.
+If your queries use any of these, groq-js throws immediately — a clear signal to test those queries against a real Sanity dataset instead.
 
 ### Performance testing requires real Content Lake
 
-groq-js can't tell you whether a query hits an index or falls back to a full scan. For that, use `explain()` from the core `vitest-groq` entrypoint — see [Optimization patterns](./optimization.md).
+Index usage and execution strategy are Content Lake concerns. To verify those, use `explain()` from the core `vitest-groq` entrypoint — see [Optimization patterns](./optimization.md).

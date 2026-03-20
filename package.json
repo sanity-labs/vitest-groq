@@ -1,16 +1,19 @@
 {
   "name": "vitest-groq",
   "version": "1.0.0",
-  "description": "Vitest matchers and utilities for testing GROQ query performance against Sanity Content Lake",
+  "description": "Testing framework for GROQ queries — business logic testing with groq-js, performance testing with execution plan snapshots",
   "keywords": [
+    "business-logic",
     "execution-plan",
     "explain",
     "groq",
+    "groq-js",
     "performance",
     "query-plan",
     "sanity",
     "snapshot",
     "testing",
+    "unit-test",
     "vitest"
   ],
   "homepage": "https://github.com/sanity-labs/vitest-groq#readme",
