@@ -1,13 +1,4 @@
-/**
- * Any object that implements `request()` and `getDataUrl()` from `@sanity/client`.
- *
- * You can pass a `SanityClient` instance directly — this interface exists so
- * vitest-groq doesn't need `@sanity/client` as a direct dependency.
- */
-export interface SanityClientLike {
-  request<T>(options: { uri: string; query: Record<string, string> }): Promise<T>;
-  getDataUrl(endpoint: string): string;
-}
+import type { SanityClient } from "@sanity/client";
 
 /**
  * Snapshot-friendly summary of a GROQ execution plan.
@@ -31,7 +22,7 @@ export interface PlanCharacteristics {
    *
    * Guard with `expect(c).toHaveNoFilterStep()`.
    *
-   * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq | High performance GROQ — Filter expressions}
+   * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq#reference-filter-expressions | High performance GROQ — Filter expressions}
    */
   noFilterStep: boolean;
   /**
@@ -40,7 +31,7 @@ export interface PlanCharacteristics {
    *
    * Guard with `expect(c).toHaveSortInFetch()`.
    *
-   * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq | High performance GROQ — Sorting}
+   * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq#sorting | High performance GROQ — Sorting}
    */
   sortInFetch: boolean;
   /**
@@ -49,7 +40,7 @@ export interface PlanCharacteristics {
    *
    * Guard with `expect(c).toHaveLimitInFetch()`.
    *
-   * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq | High performance GROQ — Slicing}
+   * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq#deep-array-indexing-and-slicing | High performance GROQ — Slicing}
    */
   limitInFetch: boolean;
   /**
@@ -78,7 +69,7 @@ export interface PlanCharacteristics {
    * Guard with `expect(c).toHaveNoDuplicateFetches()`, or use a threshold:
    * `expect(c.duplicateFetches.length).toBeLessThan(2)`.
    *
-   * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq | High performance GROQ — Avoid joins in filters}
+   * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq#avoid-joins-in-filters | High performance GROQ — Avoid joins in filters}
    */
   duplicateFetches: string[];
   /**
@@ -89,7 +80,7 @@ export interface PlanCharacteristics {
    * expect(c.resolveRefCount).toBeLessThanOrEqual(2);
    * ```
    *
-   * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq | High performance GROQ — Reference resolution}
+   * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq#avoid-repeated-resolving-of-references | High performance GROQ — Reference resolution}
    */
   resolveRefCount: number;
 }
@@ -118,7 +109,7 @@ export interface ExplainResult {
  * ```
  */
 export async function explain(
-  client: SanityClientLike,
+  client: SanityClient,
   query: string,
   params?: Record<string, unknown>,
 ): Promise<ExplainResult> {

@@ -15,7 +15,7 @@ declare module "@vitest/expect" {
      *
      * Add when a query achieves `noFilterStep: true` in its snapshot.
      *
-     * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq | High performance GROQ — Filter expressions}
+     * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq#reference-filter-expressions | High performance GROQ — Filter expressions}
      */
     toHaveNoFilterStep(): T;
 
@@ -28,7 +28,7 @@ declare module "@vitest/expect" {
      *
      * Add when a query achieves `sortInFetch: true` in its snapshot.
      *
-     * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq | High performance GROQ — Sorting}
+     * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq#sorting | High performance GROQ — Sorting}
      */
     toHaveSortInFetch(): T;
 
@@ -41,7 +41,7 @@ declare module "@vitest/expect" {
      *
      * Add when a query achieves `limitInFetch: true` in its snapshot.
      *
-     * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq | High performance GROQ — Slicing}
+     * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq#deep-array-indexing-and-slicing | High performance GROQ — Slicing}
      */
     toHaveLimitInFetch(): T;
 
@@ -57,7 +57,7 @@ declare module "@vitest/expect" {
      * For threshold-based checks, use native matchers instead:
      * `expect(c.duplicateFetches.length).toBeLessThan(2)`
      *
-     * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq | High performance GROQ — Avoid joins in filters}
+     * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq#avoid-joins-in-filters | High performance GROQ — Avoid joins in filters}
      */
     toHaveNoDuplicateFetches(): T;
   }

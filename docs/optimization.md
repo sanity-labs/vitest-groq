@@ -8,7 +8,7 @@ These patterns show how to improve a query's execution plan, how to rewrite for 
 
 **Symptom:** `toHaveNoFilterStep()` fails — a `FilterStep` is scanning every fetched row in memory.
 
-The most common cause is `count()` inside a filter predicate. The query engine can't push a correlated count to the index. See the "Reference: Filter expressions" section of [High performance GROQ](https://www.sanity.io/docs/developer-guides/high-performance-groq) for which filters can be pushed down.
+The most common cause is `count()` inside a filter predicate. The query engine can't push a correlated count to the index. See the "Reference: Filter expressions" section of [High performance GROQ](https://www.sanity.io/docs/developer-guides/high-performance-groq#reference-filter-expressions) for which filters can be pushed down.
 
 ```groq
 // BAD — forces FilterStep, O(n × m)
@@ -37,7 +37,7 @@ expect(characteristics).toHaveNoFilterStep();
 
 **Symptom:** `toHaveSortInFetch()` fails — a `SortStep` is materializing all matching rows in memory to sort them.
 
-This happens when the sort expression isn't eligible for index-level pushdown. Common causes: sorting on a computed expression, sorting after an in-memory filter, or sorting on a field that isn't a plain attribute. See the "Sorting" section of [High performance GROQ](https://www.sanity.io/docs/developer-guides/high-performance-groq) for which sort expressions can be pushed down.
+This happens when the sort expression isn't eligible for index-level pushdown. Common causes: sorting on a computed expression, sorting after an in-memory filter, or sorting on a field that isn't a plain attribute. See the "Sorting" section of [High performance GROQ](https://www.sanity.io/docs/developer-guides/high-performance-groq#sorting) for which sort expressions can be pushed down.
 
 ```groq
 // BAD — sort can't be pushed to index after FilterStep
@@ -75,7 +75,7 @@ expect(characteristics.steps).not.toContain("SortStep");
 
 **Symptom:** `toHaveLimitInFetch()` fails — the engine fetches ALL matching rows, then discards extras via `SliceStep`.
 
-This usually follows the same root cause as SortStep — if the filter or sort can't be pushed to the index, the limit can't be either. See "Deep array indexing and slicing" in [High performance GROQ](https://www.sanity.io/docs/developer-guides/high-performance-groq).
+This usually follows the same root cause as SortStep — if the filter or sort can't be pushed to the index, the limit can't be either. See "Deep array indexing and slicing" in [High performance GROQ](https://www.sanity.io/docs/developer-guides/high-performance-groq#deep-array-indexing-and-slicing).
 
 ```groq
 // BAD — slice applied in memory after full scan
@@ -109,7 +109,7 @@ expect(characteristics).toHaveLimitInFetch();
 
 ## Duplicate Fetch filters: redundant subqueries
 
-**Symptom:** `toHaveNoDuplicateFetches()` fails — the same filter pattern appears in multiple Fetch nodes, meaning the engine runs the same subquery more than once. See "Avoid joins in filters" in [High performance GROQ](https://www.sanity.io/docs/developer-guides/high-performance-groq).
+**Symptom:** `toHaveNoDuplicateFetches()` fails — the same filter pattern appears in multiple Fetch nodes, meaning the engine runs the same subquery more than once. See "Avoid joins in filters" in [High performance GROQ](https://www.sanity.io/docs/developer-guides/high-performance-groq#avoid-joins-in-filters).
 
 ```groq
 // BAD — fetches all comments twice (once per projected field)
@@ -155,7 +155,7 @@ expect(characteristics.duplicateFetches.length).toBeLessThan(2);
 
 ## Reference resolution budget
 
-**Symptom:** `resolveRefCount` is higher than expected — each `ResolveRefStep` is a batched network call for `->` dereferences. See "Avoid repeated resolving of references" in [High performance GROQ](https://www.sanity.io/docs/developer-guides/high-performance-groq).
+**Symptom:** `resolveRefCount` is higher than expected — each `ResolveRefStep` is a batched network call for `->` dereferences. See "Avoid repeated resolving of references" in [High performance GROQ](https://www.sanity.io/docs/developer-guides/high-performance-groq#avoid-repeated-resolving-of-references).
 
 ```groq
 // BAD — resolves author twice

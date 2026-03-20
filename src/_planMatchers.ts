@@ -1,6 +1,6 @@
 import type { PlanCharacteristics } from "./index";
 
-const GROQ_PERF_GUIDE = "https://www.sanity.io/docs/developer-guides/high-performance-groq";
+const GROQ_PERF = "https://www.sanity.io/docs/developer-guides/high-performance-groq";
 
 export const planMatchers = {
   toHaveNoFilterStep(this: { isNot?: boolean }, characteristics: PlanCharacteristics) {
@@ -16,7 +16,7 @@ export const planMatchers = {
             `Previously all filters were inside Fetch nodes (index-level filtering).\n\n` +
             `Plan steps: [${characteristics.steps.join(", ")}]` +
             (filterSteps.length > 0 ? `\nFilterStep count: ${filterSteps.length}` : "") +
-            `\n\nSee: ${GROQ_PERF_GUIDE}`,
+            `\n\nSee: ${GROQ_PERF}#reference-filter-expressions`,
       actual: characteristics.noFilterStep,
       expected: true,
     };
@@ -37,7 +37,7 @@ export const planMatchers = {
             (hasSortStep
               ? `\nSortStep is present in the plan (in-memory sort).`
               : `\nNo SortStep in the plan — sort may be absent entirely.`) +
-            `\n\nSee: ${GROQ_PERF_GUIDE}`,
+            `\n\nSee: ${GROQ_PERF}#sorting`,
       actual: characteristics.sortInFetch,
       expected: true,
     };
@@ -58,7 +58,7 @@ export const planMatchers = {
             (hasSliceStep
               ? `\nSliceStep is present in the plan (in-memory slicing).`
               : `\nNo SliceStep in the plan — limit may be absent entirely.`) +
-            `\n\nSee: ${GROQ_PERF_GUIDE}`,
+            `\n\nSee: ${GROQ_PERF}#deep-array-indexing-and-slicing`,
       actual: characteristics.limitInFetch,
       expected: true,
     };
@@ -77,7 +77,7 @@ export const planMatchers = {
             `Consolidate into a single fetch with a chained projection.\n\n` +
             `Duplicated patterns (${dupes.length}):\n` +
             dupes.map((f) => `  - ${f}`).join("\n") +
-            `\n\nSee: ${GROQ_PERF_GUIDE}`,
+            `\n\nSee: ${GROQ_PERF}#avoid-joins-in-filters`,
       actual: dupes,
       expected: [],
     };
