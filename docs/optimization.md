@@ -223,6 +223,54 @@ expect(characteristics.steps).not.toContain("FilterStep");
 
 ---
 
+## Comparing queries
+
+When you refactor a query using one of the patterns above, both versions must pass the same contract tests before you compare plans. Extract the query into a shared constant so the contract tests and explain tests always reference the same string:
+
+```ts
+// queries.ts — single source of truth
+export const FEATURED_ARTICLES = `*[_type == "article"
+  && featured == true
+  && author._ref in *[_type == "author" && active != false]._id
+]{ _id, title, "authorName": author->name }`;
+```
+
+```ts
+// queries.test.ts — contract tests (groq-js, no network)
+import { FEATURED_ARTICLES } from "../queries";
+
+const dataset = await loadDataset(new URL("./fixtures/articles.ndjson", import.meta.url));
+
+it("returns featured articles with active authors", async () => {
+  const result = await groq(dataset, FEATURED_ARTICLES);
+  expect(result).toHaveLength(1);
+  expect(result[0].authorName).toBe("Alice");
+});
+
+it("excludes articles whose author is inactive", async () => {
+  const result = await groq(dataset, FEATURED_ARTICLES);
+  expect(result).not.toContainEqual(expect.objectContaining({ _id: "article-3" }));
+});
+```
+
+To compare the original and refactored versions: swap the constant, run the same contract tests. If they pass, the queries are interchangeable for your dataset. Then compare plans:
+
+```ts
+// queries.perf.test.ts — explain tests (Content Lake API)
+import { FEATURED_ARTICLES } from "../queries";
+
+it("uses indexed fetches, no filter step", async () => {
+  const { characteristics, ms } = await explain(client, FEATURED_ARTICLES);
+  expect(characteristics).toMatchSnapshot();
+  expect(characteristics).toHaveNoDuplicateFetches();
+  expect(characteristics).toHaveNoFilterStep();
+});
+```
+
+The snapshot catches any plan regression. When you swap in the refactored query and the snapshot changes, update it — the diff in review shows exactly what improved. See [Query contract testing](groq-testing.md) for the full `groq()` testing guide.
+
+---
+
 ## Choosing the right assertions
 
 | Scenario                      | Assertions to add                                    |
