@@ -5,7 +5,7 @@ If you're already writing unit tests for your frontend, you can test your GROQ q
 The `groq()` utility wraps [groq-js](https://github.com/sanity-io/groq-js), the reference JavaScript implementation of the GROQ spec. You give it a dataset and a query string, and it returns the result. It runs wherever your test suite runs.
 
 ```bash
-npm install -D vitest-groq groq-js
+npm install -D vitest-groq
 ```
 
 ## Example

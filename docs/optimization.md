@@ -235,5 +235,24 @@ expect(characteristics.steps).not.toContain("FilterStep");
 | Fetch budget                  | + `expect(c.fetchCount).toBeLessThanOrEqual(n)`      |
 | Reference budget              | + `expect(c.resolveRefCount).toBeLessThanOrEqual(n)` |
 | Correlated subqueries batched | + `expect(c.steps).toContain('HashBatchStep')`       |
+| Timing budget                 | + `expect(ms).toBeLessThan(n)`                       |
 
 Add optimization guards as a query achieves each optimization — they lock in the improvement across future refactors.
+
+---
+
+## Timing assertions
+
+Plan shape assertions (`toHaveNoFilterStep`, `toHaveNoDuplicateFetches`) catch structural regressions but miss runtime cost changes — a query can have a clean plan and still be slow (see [Chained projection trade-offs](#chained-projection-trade-offs) above).
+
+`explain()` returns `ms` — server-side execution time (not network RTT). Use it as a ceiling assertion:
+
+```ts
+const { characteristics, ms } = await explain(client, query, params);
+expect(characteristics).toMatchSnapshot();
+expect(ms).toBeLessThan(50); // 3× baseline of 14ms — baseline: 14ms avg (2025-03-20)
+```
+
+Set the threshold at **3× the baseline p50** — tight enough to catch 35× regressions like the `searchIndexAllDocuments` case above, generous enough for normal server-side variance.
+
+Timing assertions are non-deterministic. They will occasionally flake under heavy API load. Keep them in a dedicated config (e.g., `vitest.perf.config.ts`) alongside your other explain tests, and don't gate merges on them unless you've confirmed stable baselines. They're most useful as a signal, not a hard gate.

@@ -51,6 +51,10 @@
       "source": "./src/groq.ts",
       "import": "./dist/groq.js"
     },
+    "./dataset": {
+      "source": "./src/dataset.ts",
+      "import": "./dist/dataset.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -67,6 +71,9 @@
       "./groq": {
         "import": "./dist/groq.js"
       },
+      "./dataset": {
+        "import": "./dist/dataset.js"
+      },
       "./package.json": "./package.json"
     }
   },
@@ -81,10 +88,14 @@
     "format:check": "oxfmt -c oxfmt.config.ts --check .",
     "prepublishOnly": "npm run build"
   },
+  "dependencies": {
+    "groq-js": "^1.29.0",
+    "tar-stream": "^3.1.8"
+  },
   "devDependencies": {
     "@sanity/client": "^7.16.0",
     "@sanity/pkg-utils": "^10.4.0",
-    "groq-js": "^1.29.0",
+    "@types/tar-stream": "^3.1.4",
     "oxfmt": "^0.41.0",
     "oxlint": "^1.56.0",
     "typescript": "^5.9.0",
@@ -92,13 +103,9 @@
   },
   "peerDependencies": {
     "@sanity/client": ">=6.0.0",
-    "groq-js": ">=1.0.0",
     "vitest": ">=2.0.0"
   },
   "peerDependenciesMeta": {
-    "groq-js": {
-      "optional": true
-    },
     "vitest": {
       "optional": true
     }

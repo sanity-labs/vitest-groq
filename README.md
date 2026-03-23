@@ -9,13 +9,13 @@ Linting, testing, and monitoring each cover different things:
 | Lint rules               | Syntax and known patterns (static)     | Pre-commit     |      Yes      |
 | **Business logic tests** | **Correct data, filters, shapes**      | **CI (fast)**  |    **Yes**    |
 | **Execution plan tests** | **Fast plans, optimizer stability**    | **CI (API)**   |    **Yes**    |
-| Timing assertions        | Latency within budget                  | CI / staging   |      No       |
+| Timing assertions        | Latency within budget (`explain()` returns `ms` — server-side execution time) | CI / staging   |      No       |
 | Runtime monitoring       | Real-world performance                 | Post-deploy    |      N/A      |
 
 `vitest-groq` fills the two **bold** rows. Lock the contract (output shape, filter rules, edge cases) and lock the performance strategy (indexed fetches, pushed-down sorts, batched subqueries). When a query changes, both layers run: did the contract hold? Is the plan still efficient? [Why test GROQ →](docs/why-test-groq.md)
 
 ```bash
-npm install -D vitest-groq groq-js
+npm install -D vitest-groq
 ```
 
 ## Lock the contract
@@ -73,6 +73,20 @@ describe("featuredArticlesQuery", () => {
 ```
 
 Three to five documents is usually enough. These tests run in milliseconds and are your safety net during refactors. See [Query contract testing](docs/groq-testing.md) for partial application, time-dependent queries, delta/webhook filters, and fidelity notes.
+
+### Loading datasets from files
+
+For shared fixtures, keep the data in `.ndjson` files and load them with `loadDataset()`:
+
+```ts
+import { loadDataset } from "vitest-groq/dataset";
+import { groq } from "vitest-groq/groq";
+
+const posts = await loadDataset(new URL("./fixtures/posts.ndjson", import.meta.url));
+const result = await groq(posts, `*[_type == "post"]{ title }`);
+```
+
+`loadDataset()` accepts plain NDJSON files (or tarballs). Pass a `URL` for resolution relative to the test file, or a string resolved from `process.cwd()`.
 
 ## Guard the execution plan
 
@@ -199,7 +213,7 @@ For numeric and array properties, use Vitest built-ins directly:
 
 `expect(c.fetchCount).toBeLessThanOrEqual(3)` · `expect(c.steps).not.toContain("SortStep")`
 
-See [Optimization patterns](docs/optimization.md) for guidance on which assertions to add when.
+See [Optimization patterns](docs/optimization.md) for guidance on which assertions to add when, including [timing assertions](docs/optimization.md#timing-assertions) using the `ms` value from `explain()`.
 
 ## Further reading
 
