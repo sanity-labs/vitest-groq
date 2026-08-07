@@ -58,6 +58,11 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: npm
+      # Node 20 ships npm 10, which rejects a lockfile written by npm 11 as
+      # out of sync. The build toolchain needs Node >=22.18, but the published
+      # output supports Node 20, so the floor stays in the matrix.
+      - if: matrix.node == 20
+        run: npm i -g npm@^11
       - run: npm ci
       - run: npm test
 

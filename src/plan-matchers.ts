@@ -4,6 +4,11 @@ import { planMatchers } from "./_planMatchers";
 
 expect.extend(planMatchers);
 
+// The emitted `.d.ts` strips the runtime import above, leaving only the ambient
+// `declare module` block below — which TypeScript treats as a global script, not
+// a module. Re-exporting a type keeps it a module so API Extractor can read it.
+export type { PlanCharacteristics } from "./index";
+
 declare module "@vitest/expect" {
   interface Matchers<T = any> {
     /**
