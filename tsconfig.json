@@ -10,11 +10,13 @@
     "noImplicitOverride": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "allowJs": true,
+    "checkJs": true,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["src", "test"]
+  "include": ["src", "test", "release.config.js"]
 }

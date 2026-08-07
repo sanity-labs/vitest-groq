@@ -95,9 +95,11 @@
   "devDependencies": {
     "@sanity/client": "^7.16.0",
     "@sanity/pkg-utils": "^10.4.0",
+    "@sanity/semantic-release-preset": "^6.0.0",
     "@types/tar-stream": "^3.1.4",
     "oxfmt": "^0.41.0",
     "oxlint": "^1.56.0",
+    "semantic-release": "^25.0.9",
     "typescript": "^5.9.0",
     "vitest": "^4.0.0"
   },

@@ -1,0 +1,93 @@
+name: CI
+
+# Workflow name based on selected inputs. Fallback to default Github naming when expression evaluates to empty string
+run-name: >-
+  ${{
+    inputs.release && 'CI ➤ Publish to NPM' ||
+    ''
+  }}
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Publish new release"
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # for checkout
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+      - run: npm ci
+      # Fails if the `engines` field drifts from what the dependency graph requires
+      - run: npx ls-engines
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      # Also runs api-extractor, which fails on any export missing a release tag
+      - run: npm run build
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 20 is the `engines` floor; the aliases track LTS so this never goes stale
+        node: [20, "lts/*", current]
+    name: test (node ${{ matrix.node }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  release:
+    permissions:
+      contents: write # to push the version commit, tag and GitHub release
+      issues: write # to comment on released issues
+      pull-requests: write # to comment on released pull requests
+      id-token: write # OIDC, for npm provenance once the repo is public
+    needs: [build, test]
+    # Only run if opted in during workflow_dispatch. Deliberately no `always()`
+    # here — that would override `needs` and publish even when the gates fail.
+    if: github.event.inputs.release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Need to fetch entire commit history to
+          # analyze every commit since last release
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+      - run: npm ci
+        # Branches that will release new versions are defined in .releaserc.json
+      - run: npx semantic-release
+        # Don't allow interrupting the release step if the job is cancelled, as it can lead to an inconsistent state
+        # e.g. git tags were pushed but it exited before `npm publish`
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}

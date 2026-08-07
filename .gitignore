@@ -27,6 +27,9 @@ coverage
 # Pack artifacts
 *.tgz
 
+# semantic-release tarball output
+.semantic-release
+
 # TypeScript
 tsconfig.tsbuildinfo
 .claude/worktrees/
