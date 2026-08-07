@@ -12,7 +12,7 @@ Linting, testing, and monitoring each cover different things:
 | Timing assertions        | Latency within budget (`explain()` returns `ms` — server-side execution time) | CI / staging  |      No       |
 | Runtime monitoring       | Real-world performance                                                        | Post-deploy   |      N/A      |
 
-`vitest-groq` fills the two **bold** rows. Lock the contract (output shape, filter rules, edge cases) and lock the performance strategy (indexed fetches, pushed-down sorts, batched subqueries). When a query changes, both layers run: did the contract hold? Is the plan still efficient? [Why test GROQ →](docs/why-test-groq.md)
+`vitest-groq` fills the two **bold** rows. Lock the contract (output shape, filter rules, edge cases) and lock the performance strategy (indexed fetches, pushed-down sorts, batched subqueries). When a query changes, both layers run: did the contract hold? Is the plan still efficient? [Why test GROQ →](https://github.com/sanity-labs/vitest-groq/blob/main/docs/why-test-groq.md)
 
 ```bash
 npm install -D vitest-groq
@@ -70,7 +70,7 @@ describe("featuredArticlesQuery", () => {
 });
 ```
 
-Three to five documents is usually enough. These tests run in milliseconds and are your safety net during refactors. See [Query contract testing](docs/groq-testing.md) for partial application, time-dependent queries, delta/webhook filters, and fidelity notes.
+Three to five documents is usually enough. These tests run in milliseconds and are your safety net during refactors. See [Query contract testing](https://github.com/sanity-labs/vitest-groq/blob/main/docs/groq-testing.md) for partial application, time-dependent queries, delta/webhook filters, and fidelity notes.
 
 ### Loading datasets from files
 
@@ -211,12 +211,12 @@ For numeric and array properties, use Vitest built-ins directly:
 
 `expect(c.fetchCount).toBeLessThanOrEqual(3)` · `expect(c.steps).not.toContain("SortStep")`
 
-See [Optimization patterns](docs/optimization.md) for guidance on which assertions to add when, including [timing assertions](docs/optimization.md#timing-assertions) using the `ms` value from `explain()`.
+See [Optimization patterns](https://github.com/sanity-labs/vitest-groq/blob/main/docs/optimization.md) for guidance on which assertions to add when, including [timing assertions](https://github.com/sanity-labs/vitest-groq/blob/main/docs/optimization.md#timing-assertions) using the `ms` value from `explain()`.
 
 ## Further reading
 
-- [Query contract testing](docs/groq-testing.md) — partial application, time-dependent queries, delta/webhook filters, identity, fidelity notes
-- [Optimization patterns](docs/optimization.md) — improving execution plans with query rewrites and index-friendly patterns
-- [Plan elements glossary](docs/plan-elements.md) — every source node and pipeline step in the explain output
-- [Why test GROQ](docs/why-test-groq.md) — business logic and performance testing compared with linting, timing assertions, and runtime monitoring
+- [Query contract testing](https://github.com/sanity-labs/vitest-groq/blob/main/docs/groq-testing.md) — partial application, time-dependent queries, delta/webhook filters, identity, fidelity notes
+- [Optimization patterns](https://github.com/sanity-labs/vitest-groq/blob/main/docs/optimization.md) — improving execution plans with query rewrites and index-friendly patterns
+- [Plan elements glossary](https://github.com/sanity-labs/vitest-groq/blob/main/docs/plan-elements.md) — every source node and pipeline step in the explain output
+- [Why test GROQ](https://github.com/sanity-labs/vitest-groq/blob/main/docs/why-test-groq.md) — business logic and performance testing compared with linting, timing assertions, and runtime monitoring
 - [High performance GROQ](https://www.sanity.io/docs/developer-guides/high-performance-groq) — the complete Sanity reference
