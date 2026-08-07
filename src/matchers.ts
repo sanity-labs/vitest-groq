@@ -6,5 +6,7 @@
  * import {planMatchers} from 'vitest-groq/matchers'
  * expect.extend(planMatchers)
  * ```
+ *
+ * @beta
  */
 export { planMatchers } from "./_planMatchers";

@@ -2,6 +2,7 @@ import type { PlanCharacteristics } from "./index";
 
 const GROQ_PERF = "https://www.sanity.io/docs/developer-guides/high-performance-groq";
 
+/** @beta */
 export const planMatchers = {
   toHaveNoFilterStep(this: { isNot?: boolean }, characteristics: PlanCharacteristics) {
     const filterSteps = characteristics.steps.filter((s) => s === "FilterStep");

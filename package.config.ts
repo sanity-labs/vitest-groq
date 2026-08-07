@@ -6,10 +6,5 @@ export default defineConfig({
   strictOptions: {
     noImplicitBrowsersList: "off",
   },
-  extract: {
-    rules: {
-      "ae-missing-release-tag": "off",
-    },
-  },
   tsconfig: "tsconfig.dist.json",
 });

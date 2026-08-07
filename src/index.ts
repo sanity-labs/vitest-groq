@@ -14,6 +14,8 @@ import type { SanityClient } from "@sanity/client";
  * ```
  *
  * @see {@link https://www.sanity.io/docs/developer-guides/high-performance-groq | High performance GROQ}
+ *
+ * @beta
  */
 export interface PlanCharacteristics {
   /**
@@ -85,7 +87,11 @@ export interface PlanCharacteristics {
   resolveRefCount: number;
 }
 
-/** The full response from {@link explain}, including raw output and parsed characteristics. */
+/**
+ * The full response from {@link explain}, including raw output and parsed characteristics.
+ *
+ * @beta
+ */
 export interface ExplainResult {
   /** The raw explain string returned by Content Lake. */
   raw: string;
@@ -107,6 +113,8 @@ export interface ExplainResult {
  * expect(characteristics).toMatchSnapshot();
  * expect(characteristics).toHaveNoDuplicateFetches();
  * ```
+ *
+ * @beta
  */
 export async function explain(
   client: SanityClient,
@@ -152,6 +160,8 @@ export async function explain(
  * const characteristics = parsePlan(rawExplainString);
  * expect(characteristics).toMatchSnapshot();
  * ```
+ *
+ * @beta
  */
 export function parsePlan(raw: string): PlanCharacteristics {
   const hasFilterStep = raw.includes("FilterStep");

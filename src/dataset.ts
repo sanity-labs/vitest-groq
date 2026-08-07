@@ -46,6 +46,8 @@ const isTar = (buf: Buffer) =>
  * const posts = await loadDataset(new URL("./fixtures/posts.ndjson", import.meta.url));
  * const result = await groq(posts, `*[_type == "post"]{ title }`);
  * ```
+ *
+ * @public
  */
 export async function loadDataset(path: string | URL): Promise<unknown[]> {
   const filePath = path instanceof URL ? fileURLToPath(path) : resolve(path);

@@ -8,6 +8,8 @@ import { evaluate, parse } from "groq-js";
  *
  * Common options: `params`, `timestamp`, `identity`, `before`/`after` (delta queries),
  * `sanity` (namespace functions like `sanity::dataset()`).
+ *
+ * @public
  */
 export type GroqOptions = Omit<EvaluateOptions, "dataset"> & Pick<ParseOptions, "mode">;
 
@@ -19,6 +21,8 @@ export type GroqOptions = Omit<EvaluateOptions, "dataset"> & Pick<ParseOptions, 
  * const result = await groq(dataset, `*[_type == "post"]{ title }`);
  * const result = await groq(dataset, query, { params: { id: "doc.1" } });
  * ```
+ *
+ * @public
  */
 export function groq<R = Any, const G extends string = string>(
   dataset: unknown[],
@@ -35,6 +39,8 @@ export function groq<R = Any, const G extends string = string>(
  * const result = await run(myQuery);
  * const result = await run(otherQuery, { params: { limit: 5 } });
  * ```
+ *
+ * @public
  */
 export function groq(
   dataset: unknown[],
