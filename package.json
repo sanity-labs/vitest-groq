@@ -105,7 +105,7 @@
   },
   "peerDependencies": {
     "@sanity/client": ">=6.0.0",
-    "vitest": ">=2.0.0"
+    "vitest": ">=3.2.0"
   },
   "peerDependenciesMeta": {
     "vitest": {
