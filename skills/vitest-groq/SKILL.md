@@ -59,6 +59,7 @@ const client = createClient({
 ```
 
 Key settings:
+
 - `useCdn: false` — explain plans are metadata, not cacheable query results
 - `requestTagPrefix` — identifies test traffic in Sanity request logs
 - Rate limiting is handled automatically by `@sanity/client` (retries with backoff)
@@ -86,12 +87,12 @@ it("uses indexed fetches", async () => {
 
 ### Custom matchers
 
-| Matcher                      | What it verifies                                            |
-| ---------------------------- | ----------------------------------------------------------- |
-| `toHaveNoDuplicateFetches()` | Each subquery runs once (no duplicate Fetch filters)        |
-| `toHaveNoFilterStep()`       | All filters pushed to index (no in-memory scanning)         |
-| `toHaveSortInFetch()`        | Sort pushed to index (no in-memory materialization)         |
-| `toHaveLimitInFetch()`       | Limit pushed to index (fetches only the rows needed)        |
+| Matcher                      | What it verifies                                     |
+| ---------------------------- | ---------------------------------------------------- |
+| `toHaveNoDuplicateFetches()` | Each subquery runs once (no duplicate Fetch filters) |
+| `toHaveNoFilterStep()`       | All filters pushed to index (no in-memory scanning)  |
+| `toHaveSortInFetch()`        | Sort pushed to index (no in-memory materialization)  |
+| `toHaveLimitInFetch()`       | Limit pushed to index (fetches only the rows needed) |
 
 ### Native matchers for budgets
 
@@ -106,21 +107,26 @@ expect(characteristics.steps).not.toContain("SortStep");
 When a snapshot reveals a FilterStep, SortStep, or other concern, refactor the query. Always run the `groq()` tests first to confirm the contract held, then update the snapshot.
 
 **FilterStep (in-memory scan):**
+
 - Move dereferences out of filters: `author->active != false` → `author._ref in *[_type == "author" && active != false]._id`
 - Use set membership (`_id in` / `_ref in`) so the filter stays indexable
 
 **SortStep (in-memory sort):**
+
 - Sort on the same field the filter uses, or on `_createdAt`/`_updatedAt` which have default indexes
 
 **No limit pushdown:**
+
 - Place the slice immediately after `order()`: `| order(field desc)[0..9]`
 
 **Duplicate fetches:**
+
 - Avoid repeating the same subquery in multiple projections. Extract it to a chained projection.
 
 ## Reference documentation
 
 For complete guides, read these project docs:
+
 - `docs/optimization.md` — optimization patterns and query rewrites
 - `docs/plan-elements.md` — every source node and pipeline step
 - `docs/groq-testing.md` — in-memory query testing (time, delta, identity, fidelity notes)

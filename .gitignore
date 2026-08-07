@@ -29,3 +29,4 @@ coverage
 
 # TypeScript
 tsconfig.tsbuildinfo
+.claude/worktrees/

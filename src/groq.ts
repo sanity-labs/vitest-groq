@@ -62,8 +62,7 @@ export function groq(
   return <R = Any, const G extends string = string>(
     query: G,
     opts?: GroqOptions,
-  ): Promise<ClientReturn<G, R>> =>
-    exec(query, dataset, { ...defaults, ...opts });
+  ): Promise<ClientReturn<G, R>> => exec(query, dataset, { ...defaults, ...opts });
 }
 
 async function exec(query: string, dataset: unknown[], options?: GroqOptions) {

@@ -13,9 +13,7 @@ const isGzip = (buf: Buffer) =>
   buf.length >= 3 && buf[0] === 0x1f && buf[1] === 0x8b && buf[2] === 0x08;
 
 const isDeflate = (buf: Buffer) =>
-  buf.length >= 2 &&
-  buf[0] === 0x78 &&
-  (buf[1] === 1 || buf[1] === 0x9c || buf[1] === 0xda);
+  buf.length >= 2 && buf[0] === 0x78 && (buf[1] === 1 || buf[1] === 0x9c || buf[1] === 0xda);
 
 // https://en.wikipedia.org/wiki/Tar_(computing)#UStar_format — "ustar" at offset 257
 const isTar = (buf: Buffer) =>
@@ -161,7 +159,5 @@ async function* extractNdjsonFromTar(
     return;
   }
 
-  throw new Error(
-    `loadDataset: ${filePath} is a tarball but contains no .ndjson file`,
-  );
+  throw new Error(`loadDataset: ${filePath} is a tarball but contains no .ndjson file`);
 }

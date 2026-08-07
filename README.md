@@ -4,13 +4,13 @@ Bring your GROQ queries into your test suite. Pin down the business logic, guard
 
 Linting, testing, and monitoring each cover different things:
 
-| Layer                    | What it verifies                       | When it runs   | Deterministic |
-| ------------------------ | -------------------------------------- | -------------- | :-----------: |
-| Lint rules               | Syntax and known patterns (static)     | Pre-commit     |      Yes      |
-| **Business logic tests** | **Correct data, filters, shapes**      | **CI (fast)**  |    **Yes**    |
-| **Execution plan tests** | **Fast plans, optimizer stability**    | **CI (API)**   |    **Yes**    |
-| Timing assertions        | Latency within budget (`explain()` returns `ms` — server-side execution time) | CI / staging   |      No       |
-| Runtime monitoring       | Real-world performance                 | Post-deploy    |      N/A      |
+| Layer                    | What it verifies                                                              | When it runs  | Deterministic |
+| ------------------------ | ----------------------------------------------------------------------------- | ------------- | :-----------: |
+| Lint rules               | Syntax and known patterns (static)                                            | Pre-commit    |      Yes      |
+| **Business logic tests** | **Correct data, filters, shapes**                                             | **CI (fast)** |    **Yes**    |
+| **Execution plan tests** | **Fast plans, optimizer stability**                                           | **CI (API)**  |    **Yes**    |
+| Timing assertions        | Latency within budget (`explain()` returns `ms` — server-side execution time) | CI / staging  |      No       |
+| Runtime monitoring       | Real-world performance                                                        | Post-deploy   |      N/A      |
 
 `vitest-groq` fills the two **bold** rows. Lock the contract (output shape, filter rules, edge cases) and lock the performance strategy (indexed fetches, pushed-down sorts, batched subqueries). When a query changes, both layers run: did the contract hold? Is the plan still efficient? [Why test GROQ →](docs/why-test-groq.md)
 
@@ -65,9 +65,7 @@ describe("featuredArticlesQuery", () => {
 
   it("excludes articles whose author is inactive", async () => {
     const result = await groq(dataset, QUERY);
-    expect(result).not.toContainEqual(
-      expect.objectContaining({ _id: "article-3" }),
-    );
+    expect(result).not.toContainEqual(expect.objectContaining({ _id: "article-3" }));
   });
 });
 ```
@@ -200,12 +198,12 @@ If you use [Claude Code](https://docs.anthropic.com/en/docs/claude-code), the `v
 
 Import `vitest-groq/plan-matchers` in your setup file to register these:
 
-| Matcher                      | What it verifies             | Why it matters                                                   |
-| ---------------------------- | ---------------------------- | ---------------------------------------------------------------- |
-| `toHaveNoDuplicateFetches()` | Each subquery runs once      | Avoids redundant network round-trips                             |
-| `toHaveNoFilterStep()`       | All filters use an index     | Ensures O(log n) lookups instead of full scans                   |
-| `toHaveSortInFetch()`        | Sort pushed to index         | Results arrive pre-sorted from the storage layer                 |
-| `toHaveLimitInFetch()`       | Limit pushed to index        | Only the rows needed are fetched                                 |
+| Matcher                      | What it verifies         | Why it matters                                   |
+| ---------------------------- | ------------------------ | ------------------------------------------------ |
+| `toHaveNoDuplicateFetches()` | Each subquery runs once  | Avoids redundant network round-trips             |
+| `toHaveNoFilterStep()`       | All filters use an index | Ensures O(log n) lookups instead of full scans   |
+| `toHaveSortInFetch()`        | Sort pushed to index     | Results arrive pre-sorted from the storage layer |
+| `toHaveLimitInFetch()`       | Limit pushed to index    | Only the rows needed are fetched                 |
 
 `toHaveNoDuplicateFetches()` belongs in every explain test. Add the others as a query achieves each optimization.
 

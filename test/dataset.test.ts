@@ -3,8 +3,7 @@ import { describe, expect, it } from "vitest";
 import { loadDataset } from "../src/dataset";
 import { groq } from "../src/groq";
 
-const fixture = (name: string) =>
-  new URL(`./fixtures/${name}`, import.meta.url);
+const fixture = (name: string) => new URL(`./fixtures/${name}`, import.meta.url);
 
 describe("loadDataset — NDJSON", () => {
   it("loads an ndjson file", async () => {
@@ -19,9 +18,7 @@ describe("loadDataset — NDJSON", () => {
   });
 
   it("throws on malformed JSON with line number", async () => {
-    await expect(loadDataset(fixture("malformed.ndjson"))).rejects.toThrow(
-      /malformed JSON at.*:2/,
-    );
+    await expect(loadDataset(fixture("malformed.ndjson"))).rejects.toThrow(/malformed JSON at.*:2/);
   });
 });
 

@@ -81,16 +81,19 @@ For edge cases and empty states, inline the dataset:
 
 ```ts
 it("returns an empty array when no articles are featured", async () => {
-  const result = await groq([
-    { _type: "author", _id: "author-1", name: "Alice", active: true },
-    {
-      _type: "article",
-      _id: "article-1",
-      title: "Draft",
-      featured: false,
-      author: { _type: "reference", _ref: "author-1" },
-    },
-  ], featuredArticlesQuery);
+  const result = await groq(
+    [
+      { _type: "author", _id: "author-1", name: "Alice", active: true },
+      {
+        _type: "article",
+        _id: "article-1",
+        title: "Draft",
+        featured: false,
+        author: { _type: "reference", _ref: "author-1" },
+      },
+    ],
+    featuredArticlesQuery,
+  );
   expect(result).toHaveLength(0);
 });
 ```

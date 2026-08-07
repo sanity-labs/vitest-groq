@@ -1,6 +1,6 @@
 # Why Test GROQ
 
-GROQ queries encode business logic: which documents to show, how to sort them, what shape to return. They also determine performance: whether Content Lake uses an index or scans every document. Testing both means you know the query is correct *and* efficient before it ships.
+GROQ queries encode business logic: which documents to show, how to sort them, what shape to return. They also determine performance: whether Content Lake uses an index or scans every document. Testing both means you know the query is correct _and_ efficient before it ships.
 
 Two things to test:
 
@@ -54,17 +54,17 @@ Sanity's own query-classifier (now archived) and tools like api-devtools analyze
 | Lint (sanity-lint)                   |    Patterns    |          —           |    Yes     |      Yes      |
 | Timing assertions                    |       —        |       Latency        |    Yes     |      No       |
 | Runtime observability (api-devtools) |       —        |     Real traffic     |     No     |      N/A      |
-| **groq() unit tests**               |   **Output**   |          —           |  **Yes**   |    **Yes**    |
+| **groq() unit tests**                |   **Output**   |          —           |  **Yes**   |    **Yes**    |
 | **explain() snapshots**              |       —        |     **Strategy**     |  **Yes**   |    **Yes**    |
 
 ## Scope and complementary tools
 
 Each tool in the stack has a natural scope. Where vitest-groq's scope ends, other tools pick up:
 
-| Scope boundary                                  | What covers it                                                          | How to combine                                                    |
-| ----------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| **groq-js feature coverage**                     | Content Lake implements features groq-js doesn't yet (see [fidelity notes](groq-testing.md#fidelity-notes-groq-js-vs-content-lake)) | Test those paths in staging or with explain tests                  |
-| **Latency at scale**                            | Same plan, more data = different timing. Snapshots verify structure.    | Complement with periodic benchmarks or timing assertions          |
-| **New query coverage**                          | A new query has no snapshot until its first test run.                   | Convention: add an explain test alongside every new query.         |
-| **Cross-query interactions**                    | One query's load affecting another is a runtime concern.                | Runtime monitoring (api-devtools, Sanity dashboard).              |
-| **Optimizer improvements**                      | Sanity ships a better optimizer; plans change beneficially.             | Update snapshots after verifying the new plan is equal or better. |
+| Scope boundary               | What covers it                                                                                                                      | How to combine                                                    |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| **groq-js feature coverage** | Content Lake implements features groq-js doesn't yet (see [fidelity notes](groq-testing.md#fidelity-notes-groq-js-vs-content-lake)) | Test those paths in staging or with explain tests                 |
+| **Latency at scale**         | Same plan, more data = different timing. Snapshots verify structure.                                                                | Complement with periodic benchmarks or timing assertions          |
+| **New query coverage**       | A new query has no snapshot until its first test run.                                                                               | Convention: add an explain test alongside every new query.        |
+| **Cross-query interactions** | One query's load affecting another is a runtime concern.                                                                            | Runtime monitoring (api-devtools, Sanity dashboard).              |
+| **Optimizer improvements**   | Sanity ships a better optimizer; plans change beneficially.                                                                         | Update snapshots after verifying the new plan is equal or better. |
