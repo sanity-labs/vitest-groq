@@ -58,7 +58,6 @@
     "./package.json": "./package.json"
   },
   "publishConfig": {
-    "provenance": true,
     "exports": {
       ".": "./dist/index.js",
       "./matchers": "./dist/matchers.js",
@@ -66,7 +65,8 @@
       "./groq": "./dist/groq.js",
       "./dataset": "./dist/dataset.js",
       "./package.json": "./package.json"
-    }
+    },
+    "provenance": true
   },
   "scripts": {
     "build": "pkg-utils build --strict --check",
@@ -88,6 +88,7 @@
     "@sanity/pkg-utils": "^12.1.0",
     "@sanity/semantic-release-preset": "^6.0.0",
     "@types/tar-stream": "^3.1.4",
+    "@vitest/expect": "^4.1.0",
     "oxfmt": "^0.41.0",
     "oxlint": "^1.56.0",
     "semantic-release": "^25.0.9",
@@ -105,5 +106,6 @@
   },
   "engines": {
     "node": ">=20"
-  }
+  },
+  "packageManager": "pnpm@11.20.0"
 }
