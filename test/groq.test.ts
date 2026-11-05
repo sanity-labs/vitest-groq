@@ -27,6 +27,13 @@ describe("groq — direct call", () => {
     expect(result).toMatchObject({ title: "Second" });
   });
 
+  it("accepts params as slice bounds", async () => {
+    const result = await groq(posts, `*[_type == "post"] | order(_createdAt asc) [0...$size]._id`, {
+      params: { size: 2 },
+    });
+    expect(result).toEqual(["post.1", "post.2"]);
+  });
+
   it("returns count", async () => {
     const result = await groq(posts, `count(*[_type == "post"])`);
     expect(result).toBe(3);
@@ -43,6 +50,13 @@ describe("groq — partial application", () => {
     const run = groq(posts);
     const result = await run(`*[_type == "post"]{ title }`);
     expect(result).toHaveLength(3);
+  });
+
+  it("accepts bound params as slice bounds", async () => {
+    const run = groq(posts, { params: { size: 1 } });
+    expect(await run(`*[_type == "post"] | order(_createdAt asc) [0...$size]._id`)).toEqual([
+      "post.1",
+    ]);
   });
 
   it("inherits default options", async () => {
