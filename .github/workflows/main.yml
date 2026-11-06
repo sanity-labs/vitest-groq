@@ -56,6 +56,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        # pnpm 11 needs Node >=22.13 (node:sqlite); the bundled exe keeps the Node 20 engines floor testable
+        with:
+          standalone: true
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}

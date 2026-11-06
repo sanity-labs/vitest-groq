@@ -67,7 +67,8 @@ export function groq(
 
 async function exec(query: string, dataset: unknown[], options?: GroqOptions) {
   const { mode, ...evaluateOptions } = options ?? {};
-  const tree = parse(query, mode ? { mode } : undefined);
+  // groq-js folds params into the tree at parse time; slice bounds must be constant by then.
+  const tree = parse(query, { mode, params: evaluateOptions.params });
   const value = await evaluate(tree, { dataset, ...evaluateOptions });
   return value.get();
 }
