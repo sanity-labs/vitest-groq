@@ -27,7 +27,7 @@ describe("groq — direct call", () => {
     expect(result).toMatchObject({ title: "Second" });
   });
 
-  it("accepts params as slice bounds", async () => {
+  it("returns as many results as a param asks for", async () => {
     const result = await groq(posts, `*[_type == "post"] | order(_createdAt asc) [0...$size]._id`, {
       params: { size: 2 },
     });
@@ -52,7 +52,7 @@ describe("groq — partial application", () => {
     expect(result).toHaveLength(3);
   });
 
-  it("accepts bound params as slice bounds", async () => {
+  it("returns as many results as a default param asks for", async () => {
     const run = groq(posts, { params: { size: 1 } });
     expect(await run(`*[_type == "post"] | order(_createdAt asc) [0...$size]._id`)).toEqual([
       "post.1",
