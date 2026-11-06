@@ -1,6 +1,6 @@
 {
   "name": "vitest-groq",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Testing framework for GROQ queries — business logic testing with groq-js, performance testing with execution plan snapshots",
   "keywords": [
     "business-logic",

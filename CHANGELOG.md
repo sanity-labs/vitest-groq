@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.0.1](https://github.com/sanity-labs/vitest-groq/compare/v1.0.0...v1.0.1) (2026-11-06)
+
+### Bug Fixes
+
+* pass params to the parser ([#1](https://github.com/sanity-labs/vitest-groq/issues/1)) ([e589ed7](https://github.com/sanity-labs/vitest-groq/commit/e589ed73ebc72528a2871270de3156a44dd9fd2b))
+
 ## 1.0.0 (2026-08-07)
 
 ### Features
